@@ -5,10 +5,11 @@ import station
 import aqi
 
 class AirQualityEntity:
-    def __init__(self,parameter,model_path):
+    def __init__(self,parameter,model_path,log_increment):
         self.parameter = parameter
         self.model_path = model_path
-        self.predictor = m.AirQualityPredictor(model_path)
+        self.log_increment = log_increment
+        self.predictor = m.AirQualityPredictor(model_path,self.log_increment)
 
 class City:
     def __init__(self,code,qweather_id,latitude,longitude,country,station):
@@ -22,12 +23,12 @@ class City:
 class AirQuality:
     def __init__(self,noaa_data_path):
         self.targets = [
-            AirQualityEntity("pm10","model/pm10"),
-            AirQualityEntity("pm25","model/pm25"),
-            AirQualityEntity("o3","model/o3"),
-            AirQualityEntity("co","model/co"),
-            AirQualityEntity("no2","model/no2"),
-            AirQualityEntity("so2","model/so2")
+            AirQualityEntity("pm10","model/pm10",1),
+            AirQualityEntity("pm25","model/pm25",1),
+            AirQualityEntity("o3","model/o3",1),
+            AirQualityEntity("co","model/co",0.001),
+            AirQualityEntity("no2","model/no2",1),
+            AirQualityEntity("so2","model/so2",1)
         ]
         self.cities = {}
         self.qweather_api_key = "c6f024bd8b1940b3a8b663ca6739463e"

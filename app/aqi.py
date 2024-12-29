@@ -3,6 +3,17 @@ import numpy as np
 def calculate_us_aqi(pollutants):
     def aqi_formula(c, c_low, c_high, iaqi_low, iaqi_high):
         return ((iaqi_high - iaqi_low) / (c_high - c_low)) * (c - c_low) + iaqi_low
+    
+    def change_unit(pollutant, concentration): 
+        if pollutant == 'o3':
+            return concentration * 24.45 / 48.00 # µg/m³ to ppb
+        elif pollutant == 'no2':
+            return concentration * 24.45 / 46.01 # µg/m³ to ppb
+        elif pollutant == 'so2':
+            return concentration * 24.45 / 64.07 # µg/m³ to ppb
+        elif pollutant == 'co':
+            return concentration * 24.45 / 30.01 # mg/m³ to ppm
+        return concentration
 
     us_aqi_breakpoints = {
         'pm25': [
@@ -58,6 +69,8 @@ def calculate_us_aqi(pollutants):
     for pollutant, concentration in pollutants.items():
         if pollutant not in us_aqi_breakpoints:
             raise ValueError(f"unknown pollutant: {pollutant}")
+        
+        concentration = change_unit(pollutant, concentration)
 
         for (c_low, c_high, iaqi_low, iaqi_high) in us_aqi_breakpoints[pollutant]:
             if c_low <= concentration <= c_high:

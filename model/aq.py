@@ -4,25 +4,27 @@ import data as d
 import train as t
 
 class AirQualityEntity:
-    def __init__(self,parameter,train_data_file,model_path):
+    def __init__(self,parameter,model_path,log_increment = 1):
         self.parameter = parameter
-        self.train_data_file = train_data_file
         self.model_path = model_path
+        self.log_increment = log_increment
 
 class AirQuality:
     def __init__(self):
         self.targets = [
-            AirQualityEntity(d.OpenAQParameter(1,"pm10","µg/m³"),"data/train/pm10.csv","model-pm10"),
-            AirQualityEntity(d.OpenAQParameter(2,"pm25","µg/m³"),"data/train/pm25.csv","model-pm25"),
-            AirQualityEntity(d.OpenAQParameter(3,"o3","µg/m³"),"data/train/o3.csv","model-o3"),
-            AirQualityEntity(d.OpenAQParameter(4,"co","µg/m³"),"data/train/co.csv","model-co"),
-            AirQualityEntity(d.OpenAQParameter(5,"no2","µg/m³"),"data/train/no2.csv","model-no2"),
-            AirQualityEntity(d.OpenAQParameter(6,"so2","µg/m³"),"data/train/so2.csv","model-so2")
+            AirQualityEntity(d.OpenAQParameter(1,"pm10","µg/m³"),"model-pm10",1),
+            AirQualityEntity(d.OpenAQParameter(2,"pm25","µg/m³"),"model-pm25",1),
+            AirQualityEntity(d.OpenAQParameter(3,"o3","µg/m³"),"model-o3",1),
+            AirQualityEntity(d.OpenAQParameter(4,"co","µg/m³"),"model-co",0.001),
+            AirQualityEntity(d.OpenAQParameter(5,"no2","µg/m³"),"model-no2",1),
+            AirQualityEntity(d.OpenAQParameter(6,"so2","µg/m³"),"model-so2",1)
         ]
         self.noaa_data_path = "data/noaa-gsod"
         self.openaq_data_path = "data/open-aq"
-        self.preprocess_start_year = 2019
-        self.preprocess_end_year = 2020
+        self.preprocess_start_year = 2023
+        self.preprocess_end_year = 2024
+        self.train_data_path = "data/train"
+        self.evaluate_path = "data/train"
 
     def download_data(self):
         aqdata = d.AirQualityData()
@@ -37,17 +39,19 @@ class AirQuality:
                          self.preprocess_start_year,
                          self.preprocess_end_year)
 
-    def train(self,index):
-        if index < 0 or index >= len(self.targets):
-            print(f"train index out of range: [0, {len(self.targets)})")
-            return
-        now = datetime.now()
-        current_time_str = now.strftime('%Y%m%d%H%M%S')
-        aq_train = t.AirQualityTrain(
-            self.targets[index].parameter.name,
-            self.targets[index].train_data_file,
-            self.targets[index].model_path + "/" + current_time_str)
-        aq_train.train()
+    def train(self,indexs):
+        for index in indexs:
+            if index < 0 or index >= len(self.targets):
+                print(f"train index {index} out of range: [0, {len(self.targets)})")
+                return
+        for index in indexs:
+            aq_train = t.AirQualityTrain(
+                self.targets[index].parameter.name,
+                self.train_data_path,
+                self.targets[index].model_path,
+                self.targets[index].log_increment,
+                self.evaluate_path)
+            aq_train.train()
 
     def predict(self):
         aq_train = t.AirQualityPredict("model-pm25/20241224204155")
@@ -69,9 +73,12 @@ def main(args):
         aq.preprocess()
     if args.action == "train":
         if args.p is None:
-            print("need parameter --p")
-            return
-        aq.train(args.p)
+            indexs = []
+            for i in range(0, len(aq.targets)):
+                indexs.append(i)
+            aq.train(indexs)
+        else:
+            aq.train([args.p])
     if args.action == "predict":
         aq.predict()
 
